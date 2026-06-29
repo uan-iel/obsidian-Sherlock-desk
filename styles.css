@@ -1735,6 +1735,23 @@ body.sherlock-global-style .workspace-split.mod-vertical > * > .workspace-leaf-r
   opacity: 1;
 }
 
+.sherlock-map-point-preview {
+  opacity: 0.7;
+  pointer-events: none;
+  animation: sherlockMapPointPulse 900ms ease-in-out infinite;
+}
+
+@keyframes sherlockMapPointPulse {
+  0%, 100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
 .sherlock-footprint-panel {
   position: relative;
   z-index: 1;

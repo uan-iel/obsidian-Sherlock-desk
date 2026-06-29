@@ -443,11 +443,12 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
   private async createPlaceWithTitleAtMapPercent(title: string, xPercent: number, yPercent: number): Promise<TFile | null> {
     try {
       const { latitude, longitude, latitudeHemisphere, longitudeHemisphere } = this.convertMapPercentToCoordinates(xPercent, yPercent);
+      const uniqueTitle = this.ensureUniquePlaceTitle(title);
       const file = await createTypedNote(
         this.app,
         this.settings.placeFolder,
-        title,
-        buildPlaceTemplate(title, latitude, longitude, latitudeHemisphere, longitudeHemisphere)
+        uniqueTitle,
+        buildPlaceTemplate(uniqueTitle, latitude, longitude, latitudeHemisphere, longitudeHemisphere)
       );
       await this.openFile(file);
       return file;
@@ -459,8 +460,22 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
   }
 
   private defaultPlaceTitle(): string {
-    const stamp = new Date().toISOString().replace("T", " ").slice(0, 16);
-    return `Footprint ${stamp}`;
+    const now = new Date();
+    const stamp = now.toISOString().replace("T", " ").slice(0, 19).replace(/:/g, "-");
+    const ms = String(now.getMilliseconds()).padStart(3, "0");
+    return `Footprint ${stamp} ${ms}`;
+  }
+
+  private ensureUniquePlaceTitle(title: string): string {
+    const folder = this.settings.placeFolder.replace(/\/$/, "");
+    const safeName = title.replace(/[\\/:*?"<>|]/g, "-").trim() || "Untitled";
+    let candidate = safeName;
+    let index = 1;
+    while (this.app.vault.getAbstractFileByPath(`${folder}/${candidate}.md`)) {
+      index += 1;
+      candidate = `${safeName} ${index}`;
+    }
+    return candidate;
   }
 
   private convertMapPercentToCoordinates(xPercent: number, yPercent: number): {

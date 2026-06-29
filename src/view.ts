@@ -655,7 +655,17 @@ export class SherlockWorkspaceView extends ItemView {
       const rect = map.getBoundingClientRect();
       const x = ((event.clientX - rect.left) / rect.width) * 100;
       const y = ((event.clientY - rect.top) / rect.height) * 100;
-      await this.plugin.createPlaceFromMapClick(x, y);
+      const preview = map.createEl("button", { cls: "sherlock-map-point sherlock-map-point-preview", text: "✓" });
+      preview.style.left = `${x.toFixed(2)}%`;
+      preview.style.top = `${y.toFixed(2)}%`;
+      preview.setAttribute("aria-label", "正在创建足迹");
+      preview.setAttribute("title", "正在创建足迹");
+      preview.setAttribute("disabled", "true");
+      try {
+        await this.plugin.createPlaceFromMapClick(x, y);
+      } finally {
+        preview.remove();
+      }
     });
 
     const places = data.places
