@@ -1673,6 +1673,7 @@ body.sherlock-global-style .workspace-split.mod-vertical > * > .workspace-leaf-r
     url("assets/sherlock-world-map.png") center / cover no-repeat,
     linear-gradient(135deg, #b38a52, #d5b778 42%, #9c6c35);
   background-size: auto, 100% 100%, auto;
+  cursor: crosshair;
   box-shadow:
     inset 0 0 60px rgba(65, 35, 14, 0.42),
     inset 0 0 0 10px rgba(70, 39, 18, 0.1),
@@ -1746,6 +1747,13 @@ body.sherlock-global-style .workspace-split.mod-vertical > * > .workspace-leaf-r
   left: 22px;
   z-index: 1;
   color: rgba(59, 35, 18, 0.78);
+}
+
+.sherlock-map-hint {
+  margin-left: auto;
+  color: rgba(172, 146, 111, 0.92);
+  font-size: 12px;
+  font-style: italic;
 }
 
 @keyframes sherlockFog {

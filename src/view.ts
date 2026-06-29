@@ -641,15 +641,26 @@ export class SherlockWorkspaceView extends ItemView {
     const card = container.createDiv({ cls: "sherlock-footprint-panel" });
     const header = card.createDiv({ cls: "sherlock-panel-heading" });
     header.createEl("h3", { text: "足迹地图" });
-    const addButton = header.createEl("button", { cls: "sherlock-mini-button", text: "新建足迹" });
-    this.registerDomEvent(addButton, "click", async () => this.plugin.createPlaceNote());
+    const hint = header.createEl("span", { cls: "sherlock-map-hint", text: "点击地图任意位置创建足迹" });
+    hint.setAttribute("aria-label", "点击地图任意位置创建足迹");
     const map = card.createDiv({ cls: "sherlock-footprint-map" });
     map.style.backgroundImage = `linear-gradient(180deg, rgba(47, 25, 9, 0.1), rgba(47, 25, 9, 0.22)), url("${this.plugin.getWorldMapImageUrl()}"), linear-gradient(135deg, #b38a52, #d5b778 42%, #9c6c35)`;
+
+    this.registerDomEvent(map, "click", async (event: MouseEvent) => {
+      if ((event.target as HTMLElement).closest(".sherlock-map-point")) {
+        return;
+      }
+      const rect = map.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 100;
+      const y = ((event.clientY - rect.top) / rect.height) * 100;
+      await this.plugin.createPlaceFromMapClick(x, y);
+    });
+
     const places = data.places
       .filter((place) => typeof place.latitude === "number" && typeof place.longitude === "number")
       .slice(0, 80);
     if (places.length === 0) {
-      map.createEl("p", { cls: "sherlock-empty sherlock-map-empty", text: "还没有足迹。新建一次到访记录后，地图会亮起第一个坐标。" });
+      map.createEl("p", { cls: "sherlock-empty sherlock-map-empty", text: "还没有足迹。点击地图任意位置即可创建到访记录。" });
     }
     places.forEach((place) => {
       const position = this.resolveMapPoint(place);

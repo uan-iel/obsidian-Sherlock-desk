@@ -435,22 +435,29 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
   }
 
   async createPlaceNote(): Promise<TFile | null> {
-    const input = await PlaceCaptureModal.request(this.app);
-    if (!input) {
+    const title = await PlaceNameModal.request(this.app);
+    if (!title) {
       return null;
     }
+    return this.createPlaceWithTitleAtMapPercent(title, 50, 50);
+  }
+
+  async createPlaceFromMapClick(xPercent: number, yPercent: number): Promise<TFile | null> {
+    const title = await PlaceNameModal.request(this.app);
+    if (!title) {
+      return null;
+    }
+    return this.createPlaceWithTitleAtMapPercent(title, xPercent, yPercent);
+  }
+
+  private async createPlaceWithTitleAtMapPercent(title: string, xPercent: number, yPercent: number): Promise<TFile | null> {
     try {
+      const { latitude, longitude, latitudeHemisphere, longitudeHemisphere } = this.convertMapPercentToCoordinates(xPercent, yPercent);
       const file = await createTypedNote(
         this.app,
         this.settings.placeFolder,
-        input.title,
-        buildPlaceTemplate(
-          input.title,
-          input.latitude,
-          input.longitude,
-          input.latitudeHemisphere,
-          input.longitudeHemisphere
-        )
+        title,
+        buildPlaceTemplate(title, latitude, longitude, latitudeHemisphere, longitudeHemisphere)
       );
       await this.openFile(file);
       return file;
@@ -459,6 +466,27 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
       new Notice(`无法创建足迹: ${error instanceof Error ? error.message : "未知错误"}`);
       return null;
     }
+  }
+
+  private convertMapPercentToCoordinates(xPercent: number, yPercent: number): {
+    latitude: number;
+    longitude: number;
+    latitudeHemisphere: "N" | "S";
+    longitudeHemisphere: "E" | "W";
+  } {
+    const clampedX = Math.max(0, Math.min(100, xPercent));
+    const clampedY = Math.max(0, Math.min(100, yPercent));
+    const rawLongitude = (clampedX / 100) * 360 - 180 + 105;
+    const normalizedLongitude = ((rawLongitude + 180) % 360 + 360) % 360 - 180;
+    const rawLatitude = 90 - (clampedY / 100) * 180;
+    const latitudeHemisphere = rawLatitude >= 0 ? "N" : "S";
+    const longitudeHemisphere = normalizedLongitude >= 0 ? "E" : "W";
+    return {
+      latitude: Math.round(Math.abs(rawLatitude) * 100) / 100,
+      longitude: Math.round(Math.abs(normalizedLongitude) * 100) / 100,
+      latitudeHemisphere,
+      longitudeHemisphere
+    };
   }
 
   async createQuickSchedule(day: string, start: string, end: string): Promise<TFile> {
@@ -804,26 +832,14 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
   }
 }
 
-interface PlaceCaptureInput {
-  title: string;
-  latitude: number;
-  longitude: number;
-  latitudeHemisphere: "N" | "S";
-  longitudeHemisphere: "E" | "W";
-}
-
-class PlaceCaptureModal extends Modal {
+class PlaceNameModal extends Modal {
   private titleValue = "";
-  private longitudeHemisphere: "E" | "W" = "E";
-  private latitudeValue = "";
-  private latitudeHemisphere: "N" | "S" = "N";
-  private longitudeValue = "";
-  private resolveInput?: (value: PlaceCaptureInput | null) => void;
+  private resolveName?: (value: string | null) => void;
 
-  static request(app: App): Promise<PlaceCaptureInput | null> {
+  static request(app: App): Promise<string | null> {
     return new Promise((resolve) => {
-      const modal = new PlaceCaptureModal(app);
-      modal.resolveInput = resolve;
+      const modal = new PlaceNameModal(app);
+      modal.resolveName = resolve;
       modal.open();
     });
   }
@@ -834,98 +850,34 @@ class PlaceCaptureModal extends Modal {
 
     new Setting(this.contentEl)
       .setName("地点名称")
-      .addText((text) => text.setPlaceholder("例如 上海 / Iceland").onChange((value) => {
-        this.titleValue = value.trim();
-      }));
-
-    new Setting(this.contentEl)
-      .setName("经度方向")
-      .addDropdown((dropdown) => dropdown
-        .addOption("E", "东经 E")
-        .addOption("W", "西经 W")
-        .setValue(this.longitudeHemisphere)
+      .setDesc("这个名称会作为足迹文件名。")
+      .addText((text) => text
+        .setPlaceholder("例如 上海 / Iceland")
         .onChange((value) => {
-          this.longitudeHemisphere = value === "W" ? "W" : "E";
+          this.titleValue = value.trim();
         }));
-
-    new Setting(this.contentEl)
-      .setName("经度")
-      .setDesc("填写 0 到 180，保存到小数点后两位。")
-      .addText((text) => text.setPlaceholder("121.5").onChange((value) => {
-        this.longitudeValue = value.trim();
-      }));
-
-    new Setting(this.contentEl)
-      .setName("纬度方向")
-      .addDropdown((dropdown) => dropdown
-        .addOption("N", "北纬 N")
-        .addOption("S", "南纬 S")
-        .setValue(this.latitudeHemisphere)
-        .onChange((value) => {
-          this.latitudeHemisphere = value === "S" ? "S" : "N";
-        }));
-
-    new Setting(this.contentEl)
-      .setName("纬度")
-      .setDesc("填写 0 到 90，保存到小数点后两位。")
-      .addText((text) => text.setPlaceholder("31.23").onChange((value) => {
-        this.latitudeValue = value.trim();
-      }));
 
     new Setting(this.contentEl)
       .addButton((button) => button.setButtonText("取消").onClick(() => {
-        this.resolveInput?.(null);
+        this.resolveName?.(null);
         this.close();
       }))
       .addButton((button) => button.setCta().setButtonText("创建").onClick(() => {
-        const input = this.parseInput();
-        if (!input) {
+        if (!this.titleValue) {
+          new Notice("需要填写地点名称。");
           return;
         }
-        this.resolveInput?.(input);
+        this.resolveName?.(this.titleValue);
         this.close();
       }));
+
+    const input = this.contentEl.querySelector("input");
+    if (input) {
+      input.focus();
+    }
   }
 
   onClose(): void {
     this.contentEl.empty();
-  }
-
-  private parseInput(): PlaceCaptureInput | null {
-    if (!this.titleValue) {
-      new Notice("需要填写地点名称。");
-      return null;
-    }
-    const longitudeMagnitude = this.parseCoordinate(this.longitudeValue, 0, 180, "经度");
-    if (longitudeMagnitude === null) {
-      return null;
-    }
-    const latitudeMagnitude = this.parseCoordinate(this.latitudeValue, 0, 90, "纬度");
-    if (latitudeMagnitude === null) {
-      return null;
-    }
-    const longitude = this.applyHemisphere(longitudeMagnitude, this.longitudeHemisphere);
-    const latitude = this.applyHemisphere(latitudeMagnitude, this.latitudeHemisphere);
-    return {
-      title: this.titleValue,
-      latitude,
-      longitude,
-      latitudeHemisphere: this.latitudeHemisphere,
-      longitudeHemisphere: this.longitudeHemisphere
-    };
-  }
-
-  private parseCoordinate(raw: string, min: number, max: number, label: string): number | null {
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value < min || value > max) {
-      new Notice(`${label}需要填写 ${min} 到 ${max} 之间的数字。`);
-      return null;
-    }
-    return Math.round(value * 100) / 100;
-  }
-
-  private applyHemisphere(value: number, hemisphere: "N" | "S" | "E" | "W"): number {
-    const signed = hemisphere === "S" || hemisphere === "W" ? -value : value;
-    return Math.round(signed * 100) / 100;
   }
 }
