@@ -492,8 +492,8 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
     const latitudeHemisphere = rawLatitude >= 0 ? "N" : "S";
     const longitudeHemisphere = normalizedLongitude >= 0 ? "E" : "W";
     return {
-      latitude: Math.round(Math.abs(rawLatitude) * 100) / 100,
-      longitude: Math.round(Math.abs(normalizedLongitude) * 100) / 100,
+      latitude: Math.round(rawLatitude * 100) / 100,
+      longitude: Math.round(normalizedLongitude * 100) / 100,
       latitudeHemisphere,
       longitudeHemisphere
     };
