@@ -245,9 +245,7 @@ export class SherlockWorkspaceView extends ItemView {
     const data = await this.plugin.getWorkspaceData();
     this.contentEl.empty();
     const shell = this.createDeskShell("sherlock-footprint-desk-shell");
-    this.renderDeskHeader(shell, "Memory Map", "足迹地图", "城市是记忆坐标。点开一次到访，就能继续补封面、照片墙、时间、笔记和案件/阅读关联。", [
-      { label: "新建足迹", action: async () => this.plugin.createPlaceNote() }
-    ]);
+    this.renderDeskHeader(shell, "Memory Map", "足迹地图", "城市是记忆坐标。点开一次到访，就能继续补封面、照片墙、时间、笔记和案件/阅读关联。", []);
     this.renderFootprintModule(shell, data);
   }
 
@@ -648,6 +646,10 @@ export class SherlockWorkspaceView extends ItemView {
 
     this.registerDomEvent(map, "click", async (event: MouseEvent) => {
       if ((event.target as HTMLElement).closest(".sherlock-map-point")) {
+        return;
+      }
+      const confirmed = window.confirm("是否确认创建足迹？");
+      if (!confirmed) {
         return;
       }
       const rect = map.getBoundingClientRect();

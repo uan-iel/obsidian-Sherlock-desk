@@ -1,10 +1,8 @@
 import {
   App,
-  Modal,
   Notice,
   Plugin,
   PluginManifest,
-  Setting,
   TAbstractFile,
   TFile,
   WorkspaceLeaf
@@ -435,19 +433,11 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
   }
 
   async createPlaceNote(): Promise<TFile | null> {
-    const title = await PlaceNameModal.request(this.app);
-    if (!title) {
-      return null;
-    }
-    return this.createPlaceWithTitleAtMapPercent(title, 50, 50);
+    return this.createPlaceWithTitleAtMapPercent(this.defaultPlaceTitle(), 50, 50);
   }
 
   async createPlaceFromMapClick(xPercent: number, yPercent: number): Promise<TFile | null> {
-    const title = await PlaceNameModal.request(this.app);
-    if (!title) {
-      return null;
-    }
-    return this.createPlaceWithTitleAtMapPercent(title, xPercent, yPercent);
+    return this.createPlaceWithTitleAtMapPercent(this.defaultPlaceTitle(), xPercent, yPercent);
   }
 
   private async createPlaceWithTitleAtMapPercent(title: string, xPercent: number, yPercent: number): Promise<TFile | null> {
@@ -466,6 +456,11 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
       new Notice(`无法创建足迹: ${error instanceof Error ? error.message : "未知错误"}`);
       return null;
     }
+  }
+
+  private defaultPlaceTitle(): string {
+    const stamp = new Date().toISOString().replace("T", " ").slice(0, 16);
+    return `Footprint ${stamp}`;
   }
 
   private convertMapPercentToCoordinates(xPercent: number, yPercent: number): {
@@ -832,52 +827,4 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
   }
 }
 
-class PlaceNameModal extends Modal {
-  private titleValue = "";
-  private resolveName?: (value: string | null) => void;
 
-  static request(app: App): Promise<string | null> {
-    return new Promise((resolve) => {
-      const modal = new PlaceNameModal(app);
-      modal.resolveName = resolve;
-      modal.open();
-    });
-  }
-
-  onOpen(): void {
-    this.setTitle("新建足迹");
-    this.contentEl.empty();
-
-    new Setting(this.contentEl)
-      .setName("地点名称")
-      .setDesc("这个名称会作为足迹文件名。")
-      .addText((text) => text
-        .setPlaceholder("例如 上海 / Iceland")
-        .onChange((value) => {
-          this.titleValue = value.trim();
-        }));
-
-    new Setting(this.contentEl)
-      .addButton((button) => button.setButtonText("取消").onClick(() => {
-        this.resolveName?.(null);
-        this.close();
-      }))
-      .addButton((button) => button.setCta().setButtonText("创建").onClick(() => {
-        if (!this.titleValue) {
-          new Notice("需要填写地点名称。");
-          return;
-        }
-        this.resolveName?.(this.titleValue);
-        this.close();
-      }));
-
-    const input = this.contentEl.querySelector("input");
-    if (input) {
-      input.focus();
-    }
-  }
-
-  onClose(): void {
-    this.contentEl.empty();
-  }
-}
