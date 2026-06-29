@@ -1,0 +1,10 @@
+{
+  "id": "sherlock-os",
+  "name": "Sherlock OS",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "A Sherlock Holmes inspired local-first personal management system for Obsidian.",
+  "author": "OpenAI Codex",
+  "authorUrl": "https://openai.com",
+  "isDesktopOnly": false
+}
