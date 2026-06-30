@@ -1,6 +1,6 @@
 {
   "name": "sherlock-os",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A Sherlock Holmes inspired personal operating system for Obsidian.",
   "main": "main.js",
   "scripts": {

@@ -7,7 +7,6 @@ import {
   TFile,
   WorkspaceLeaf
 } from "obsidian";
-import { appendFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { shell } from "electron";
 import {
@@ -54,12 +53,6 @@ export default class SherlockOSPlugin extends Plugin {
       this.enableGlobalStyle();
       await ensureFolders(this.app, this.settings);
       this.debugLog("onload:folders-ensured");
-      await this.ensureEntryAsset();
-      this.debugLog("onload:entry-asset-ensured");
-      await this.ensureParlorAsset();
-      this.debugLog("onload:parlor-asset-ensured");
-      await this.ensureWorldMapAsset();
-      this.debugLog("onload:world-map-asset-ensured");
 
       this.registerView(
         SHERLOCK_VIEW_TYPE,
@@ -134,8 +127,9 @@ export default class SherlockOSPlugin extends Plugin {
       });
       this.debugLog("onload:complete");
     } catch (error) {
-      this.debugLog(`onload:error:${error instanceof Error ? error.stack ?? error.message : String(error)}`);
-      throw error;
+      const message = error instanceof Error ? error.stack ?? error.message : String(error);
+      this.debugLog(`onload:error:${message}`);
+      new Notice(`Sherlock OS 加载失败：${message}`);
     }
   }
 
@@ -727,11 +721,8 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
   }
 
   debugLog(message: string): void {
-    try {
-      appendFileSync("/tmp/sherlock-os-debug.log", `[${new Date().toISOString()}] ${message}\n`);
-    } catch (_error) {
-      // Ignore logging failures so diagnostics never break the plugin itself.
-    }
+    // eslint-disable-next-line no-console
+    console.log(`[Sherlock OS] ${message}`);
   }
 
   private enableGlobalStyle(): void {
@@ -739,106 +730,21 @@ ${sourceBody.replace(/^---[\s\S]*?---\s*/, "").trim() || "- "}
   }
 
   getEntryImageUrl(): string {
-    return this.app.vault.adapter.getResourcePath("Sherlock OS/Assets/sherlock-entry.png");
+    return this.app.vault.adapter.getResourcePath(
+      `.obsidian/plugins/${this.manifest.id}/assets/sherlock-entry.png`
+    );
   }
 
   getParlorImageUrl(): string {
-    return this.app.vault.adapter.getResourcePath("Sherlock OS/Assets/sherlock-parlor.png");
+    return this.app.vault.adapter.getResourcePath(
+      `.obsidian/plugins/${this.manifest.id}/assets/sherlock-parlor.png`
+    );
   }
 
   getWorldMapImageUrl(): string {
-    return this.app.vault.adapter.getResourcePath("Sherlock OS/Assets/sherlock-world-map.png");
-  }
-
-  private async ensureEntryAsset(): Promise<void> {
-    const adapter = this.app.vault.adapter;
-    if (!this.app.vault.getAbstractFileByPath("Sherlock OS/Assets")) {
-      try {
-        await this.app.vault.createFolder("Sherlock OS/Assets");
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        if (!message.includes("Folder already exists")) {
-          throw error;
-        }
-      }
-    }
-
-    const targetPath = "Sherlock OS/Assets/sherlock-entry.png";
-    if (await adapter.exists(targetPath)) {
-      return;
-    }
-
-    try {
-      const fileSystemAdapter = adapter as unknown as { getBasePath?: () => string };
-      const basePath = fileSystemAdapter.getBasePath?.();
-      if (!basePath) {
-        this.debugLog("entry-asset:skip:no-base-path");
-        return;
-      }
-
-      const pluginAssetPath = join(
-        basePath,
-        ".obsidian",
-        "plugins",
-        this.manifest.id,
-        "assets",
-        "sherlock-entry.png"
-      );
-      const source = readFileSync(pluginAssetPath);
-      const data = source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength);
-      await adapter.writeBinary(targetPath, data);
-    } catch (error) {
-      const message = error instanceof Error ? error.stack ?? error.message : String(error);
-      this.debugLog(`entry-asset:skip:${message}`);
-    }
-  }
-
-  private async ensureParlorAsset(): Promise<void> {
-    await this.ensureBundledAsset("sherlock-parlor.png", "parlor-asset");
-  }
-
-  private async ensureWorldMapAsset(): Promise<void> {
-    await this.ensureBundledAsset("sherlock-world-map.png", "world-map-asset");
-  }
-
-  private async ensureBundledAsset(fileName: string, logPrefix: string): Promise<void> {
-    const adapter = this.app.vault.adapter;
-    if (!this.app.vault.getAbstractFileByPath("Sherlock OS/Assets")) {
-      try {
-        await this.app.vault.createFolder("Sherlock OS/Assets");
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        if (!message.includes("Folder already exists")) {
-          throw error;
-        }
-      }
-    }
-
-    const targetPath = `Sherlock OS/Assets/${fileName}`;
-
-    try {
-      const fileSystemAdapter = adapter as unknown as { getBasePath?: () => string };
-      const basePath = fileSystemAdapter.getBasePath?.();
-      if (!basePath) {
-        this.debugLog(`${logPrefix}:skip:no-base-path`);
-        return;
-      }
-
-      const pluginAssetPath = join(
-        basePath,
-        ".obsidian",
-        "plugins",
-        this.manifest.id,
-        "assets",
-        fileName
-      );
-      const source = readFileSync(pluginAssetPath);
-      const data = source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength);
-      await adapter.writeBinary(targetPath, data);
-    } catch (error) {
-      const message = error instanceof Error ? error.stack ?? error.message : String(error);
-      this.debugLog(`${logPrefix}:skip:${message}`);
-    }
+    return this.app.vault.adapter.getResourcePath(
+      `.obsidian/plugins/${this.manifest.id}/assets/sherlock-world-map.png`
+    );
   }
 }
 
