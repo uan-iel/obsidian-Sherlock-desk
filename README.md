@@ -15,7 +15,7 @@ Sherlock OS 不依赖外部数据库，所有数据都是 Vault 里的普通 Mar
 | `schedule` | `Sherlock OS/Schedules` | 调查排期，可拖拽安排到周视图 |
 | `collection` | `Sherlock OS/Collections` | 正在研读的内容（书、电影、文章等） |
 | `evidence` | `Sherlock OS/Evidence` | 沉淀后的证物/资料，可关联案件 |
-| `place` | `Sherlock OS/Places` | 足迹/地点，带经纬度，可显示在地图上 |
+| `place` | `Sherlock OS/Places` | 足迹/地点，通过地图点击创建并自动记录经纬度 |
 
 ### 主界面
 
@@ -23,7 +23,7 @@ Sherlock OS 不依赖外部数据库，所有数据都是 Vault 里的普通 Mar
 2. **Home 主页**：展示三大工作入口——Project Desk、Archive Desk、Memory Map。
 3. **Project Desk（案件桌）**：看板形式管理案件，右侧周排期支持拖拽任务、调整时长、顺延冲突。
 4. **Archive Desk（档案桌）**：管理「证物研读」和已归档的「证物柜」，支持一键将研读转为证物。
-5. **Memory Map（足迹地图）**：基于经纬度在复古地图上标注到访地点。
+5. **Memory Map（足迹地图）**：在复古地图上点击任意位置创建足迹，自动生成可点击的小勾。
 6. **Case Workspace（案件工作区）**：单个案件的详情页，聚合案情中枢、线索任务、调查排期、证物柜和时间线。
 
 ### 核心命令
